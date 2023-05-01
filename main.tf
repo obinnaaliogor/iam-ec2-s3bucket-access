@@ -11,7 +11,7 @@ provider "aws" {
 }
 resource "aws_iam_role_policy" "ec2_policy" {
   name = "ec2_policy"
-  role = aws_iam_role.ec2_role.id #Required argurment needed in policy creation.
+  role = aws_iam_role.ec2_role.name #Required argurment needed in policy creation.
 
   # Terraform's "jsonencode" function converts a
   # Terraform expression result to valid JSON syntax.
@@ -21,6 +21,8 @@ resource "aws_iam_role_policy" "ec2_policy" {
       {
         Action = [
           "s3:*",
+          "ec2-instance-connect:SendSSHPublicKey",
+          "ec2-instance-connect:SendSerialConsoleSSHPublicKey"
         ]
         Effect   = "Allow"
         Resource = "*"
@@ -56,12 +58,12 @@ resource "aws_iam_role" "ec2_role" {
 
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "ec2_profile"
-  role = aws_iam_role.ec2_role.id
+  role = aws_iam_role.ec2_role.name
 }
 
 #Creating an instance
 resource "aws_instance" "web" {
-  key_name = "app"
+  key_name = "demo"
   ami = data.aws_ami.ubuntu_user.id
   instance_type = var.instance_id[0] #Will iterate and give the number from 0,1,2....
   count = length(var.instance_id) #LENGTH USED TO GET THE NUMBER OF ITEM IN A LIST, CANT BE IN THE SAME LINE OF ARG WITH count.index
