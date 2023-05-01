@@ -1,11 +1,14 @@
 /*
-CREATE A IAM_ROLE LET EC2 INSTANCE ASSUME THAT ROLE AS THE PRINCIPLE USING ASSUME_ROLE_POLICY.
+CREATE AN IAM_ROLE, LET EC2 INSTANCE ASSUME THAT ROLE AS THE PRINCIPLE USING ASSUME_ROLE_POLICY.
 THEN CREATE AN AWS_IAM_ROLE_POLICY LET THAT POLICY HAVE S3FULL ACCESS.
 LINK THIS ROLE TO THE EC2-INSTANCE SO IT CAN WRITE, CREATE AND LIST A BUCKET.
 
 */
 
 # Here we create a iam role policy, the below Policy will allows EC2 instance to execute specific commands for example: S3Full access to s3Bucket.
+provider "aws" {
+  region = "us-east-2"
+}
 resource "aws_iam_role_policy" "ec2_policy" {
   name = "ec2_policy"
   role = aws_iam_role.ec2_role.id #Required argurment needed in policy creation.
@@ -47,6 +50,7 @@ resource "aws_iam_role" "ec2_role" {
   })
 }
 
+#which ec2 instance will even assume the role?
 #How do we link this role to our ec2 instance that we have created or will be creating so it can access the bucket?
 #We will have to create an EC2 instance Profile and use it to link the role to the instance.
 
@@ -57,10 +61,11 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 
 #Creating an instance
 resource "aws_instance" "web" {
+  key_name = "app"
   ami = data.aws_ami.ubuntu_user.id
-  instance_type = var.instance_id[count.index] #Will iterate and give the number from 0,1,2....
+  instance_type = var.instance_id[0] #Will iterate and give the number from 0,1,2....
   count = length(var.instance_id) #LENGTH USED TO GET THE NUMBER OF ITEM IN A LIST, CANT BE IN THE SAME LINE OF ARG WITH count.index
-  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name #This argument is used to assign an IAM role to ec2 instances.
   tags = {
     Name = "prod-${count.index}"
   }
