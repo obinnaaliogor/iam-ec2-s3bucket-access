@@ -65,7 +65,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 resource "aws_instance" "web" {
   key_name = "demo"
   ami = data.aws_ami.ubuntu_user.id
-  instance_type = var.instance_id[0] #Will iterate and give the number from 0,1,2....
+  instance_type = var.instance_id[count.index] #Will iterate and give the number from 0,1,2....
   count = length(var.instance_id) #LENGTH USED TO GET THE NUMBER OF ITEM IN A LIST, CANT BE IN THE SAME LINE OF ARG WITH count.index
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name #This argument is used to assign an IAM role to ec2 instances.
   tags = {
