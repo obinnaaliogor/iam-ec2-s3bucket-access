@@ -26,6 +26,11 @@ resource "aws_iam_role_policy" "ec2_policy" {
         ]
         Effect   = "Allow"
         Resource = "*"
+        #If required that this instance write to a specific bucket. i will modify the Resource argument as follows:
+        #  "Resource": [
+        #         "arn:aws:s3:::examplebucket", #The arn will represent the amazon resource name of the bucket.
+        #         "arn:aws:s3:::examplebucket/*"
+        #     
       },
     ]
   })
