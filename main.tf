@@ -1,14 +1,35 @@
-/*
-CREATE AN IAM_ROLE, LET EC2 INSTANCE ASSUME THAT ROLE AS THE PRINCIPLE USING ASSUME_ROLE_POLICY.
-THEN CREATE AN AWS_IAM_ROLE_POLICY LET THAT POLICY HAVE S3FULL ACCESS.
-LINK THIS ROLE TO THE EC2-INSTANCE SO IT CAN WRITE, CREATE AND LIST A BUCKET.
 
-*/
+# CREATE AN IAM_ROLE, LET EC2 INSTANCE ASSUME THAT ROLE AS THE PRINCIPLE USING ASSUME_ROLE_POLICY.
+# THEN CREATE AN AWS_IAM_ROLE_POLICY LET THAT POLICY HAVE S3FULL ACCESS.
+# LINK THIS ROLE TO THE EC2-INSTANCE SO IT CAN WRITE, CREATE AND LIST A BUCKET.
 
-# Here we create a iam role policy, the below Policy will allows EC2 instance to execute specific commands for example: S3Full access to s3Bucket.
+##1 Define Provider Block
 provider "aws" {
   region = "us-east-2"
 }
+
+##2 Create An IAM role and pass an entity that will assume that role.
+# Here the role will be Assumed by a resource ec2 instance.
+resource "aws_iam_role" "ec2_role" {
+  name = "ec2_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+##3 Create an iam_role_policy,
+##The below Policy will allows EC2 instance to write s3 bucket and other permissions like ec2 instance connect that will allow for ssh
 resource "aws_iam_role_policy" "ec2_policy" {
   name = "ec2_policy"
   role = aws_iam_role.ec2_role.name #Required argurment needed in policy creation.
@@ -36,37 +57,14 @@ resource "aws_iam_role_policy" "ec2_policy" {
   })
 }
 
-#First method of creating a role and adding an entity that requires that role.
-# Here the role will be assumed by a resource ec2 instance.
-
-resource "aws_iam_role" "ec2_role" {
-  name = "ec2_role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Sid    = ""
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-      },
-    ]
-  })
-}
-
-#which ec2 instance will even assume the role?
-#How do we link this role to our ec2 instance that we have created or will be creating so it can access the bucket?
-#We will have to create an EC2 instance Profile and use it to link the role to the instance.
-
+##4 Create an Iam Instance Profile, this is an argument needed to grant/assign more permissions to ec2 instance.
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "ec2_profile"
   role = aws_iam_role.ec2_role.name
 }
 
-#Creating an instance
+#5 Creating an ec2 instance and add the argument iam_instance Profile and the values.
+# This will grant ec2 instance the role and permission in the instance profile
 resource "aws_instance" "web" {
   key_name = "demo"
   ami = data.aws_ami.ubuntu_user.id
@@ -77,7 +75,7 @@ resource "aws_instance" "web" {
     Name = "prod-${count.index}"
   }
 }
-#Using datasource to get an AMI to provision an instance.
+#5 Using Datasource to get an AMI to provision an instance.
 data "aws_ami" "ubuntu_user" {
   most_recent      = true
   owners           = ["amazon"]
@@ -104,34 +102,12 @@ data "aws_ami" "ubuntu_user" {
   }
   
 }
-#Attribute what you can get out of a resource 
+##6 Attribute what you can get out of a resource
 #to get the ami it will be data.resourcetype.resourcename.attribute #attribute is id
-#This ami id that will be gotten will be passed into the ami fild in the instance
+#This ami id that will be gotten will be passed into the ami fild ofthe instance.
 output "ami_id" {
 value = data.aws_ami.ubuntu_user.id
 }
 
-
-#WE CAN ALSO CREATE AN S3 BUCKET CALLED "OBINNA" OR ANYNAME IF YOU DO NOT HAVE A BUCKET ALREADY CREATED
-
-
-/*#second method
-#Alternatively Creating a role and adding the entity that will assume the role. 
-#It is done in 2 ways by using data source and directly.
-data "aws_iam_policy_document" "instance_assume_role_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "instance" {
-  name               = "instance_role"
-  path               = "/system/"
-  assume_role_policy = data.aws_iam_policy_document.instance_assume_role_policy.json
-}
-*/
+#So i excluded the iam instance profile and create the instance.
+#I Leta added the iam instance profile as part of Ec2 instance argument. Terraform said "aws_instance.web[1] will be updated in-place"
