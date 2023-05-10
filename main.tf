@@ -2,6 +2,15 @@
 # CREATE AN IAM_ROLE, LET EC2 INSTANCE ASSUME THAT ROLE AS THE PRINCIPLE USING ASSUME_ROLE_POLICY.
 # THEN CREATE AN AWS_IAM_ROLE_POLICY LET THAT POLICY HAVE S3FULL ACCESS.
 # LINK THIS ROLE TO THE EC2-INSTANCE SO IT CAN WRITE, CREATE AND LIST A BUCKET.
+terraform {
+  required_version = "~> 1.4"
+  required_providers{
+    aws ={
+      source = "hashicorp/aws"
+      version = "~> 3.0"
+    }
+  }
+}
 
 ##1 Define Provider Block
 provider "aws" {
@@ -66,10 +75,10 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 #5 Creating an ec2 instance and add the argument iam_instance Profile and the values.
 # This will grant ec2 instance the role and permission in the instance profile
 resource "aws_instance" "web" {
-  key_name = "demo"
+  key_name = var.key_pair
   ami = data.aws_ami.ubuntu_user.id
-  instance_type = var.instance_id[count.index] #Will iterate and give the number from 0,1,2....
-  count = length(var.instance_id) #LENGTH USED TO GET THE NUMBER OF ITEM IN A LIST, CANT BE IN THE SAME LINE OF ARG WITH count.index
+  instance_type = var.instance_type[count.index] #Will iterate and give the number from 0,1,2....
+  count = length(var.instance_type) #LENGTH USED TO GET THE NUMBER OF ITEM IN A LIST, CANT BE IN THE SAME LINE OF ARG WITH count.index
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name #This argument is used to assign an IAM role to ec2 instances.
   tags = {
     Name = "prod-${count.index}"
